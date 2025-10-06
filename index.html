@@ -1,8 +1,122 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>It works!</title></head>
-  <body style="font-family: system-ui; padding: 2rem;">
-    <h1>GitHub Pages is live 🎉</h1>
-    <p>If you see this at <code>https://yourusername.github.io</code>, Pages is working.</p>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Photo Gallery</title>
+  <meta name="description" content="Minimal, fast photo gallery." />
+  <style>
+    :root { --bg:#0b0b0c; --fg:#e6e6e6; --muted:#9aa0a6; --card:#131316; --ring:rgba(255,255,255,.12); }
+    :root.light { --bg:#fafafa; --fg:#0e0e10; --muted:#6b7280; --card:#ffffff; --ring:rgba(0,0,0,.08); }
+    *{ box-sizing:border-box }
+    body{ margin:0; background:var(--bg); color:var(--fg);
+      font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+    header{ position:sticky; top:0; z-index:5; backdrop-filter:blur(6px);
+      background: rgba(0,0,0,.2); border-bottom:1px solid var(--ring); }
+    .wrap{ max-width:1200px; margin:0 auto; padding:16px 20px; display:flex; align-items:center; gap:12px; }
+    h1{ font-size:18px; font-weight:600; margin:0; letter-spacing:.2px; }
+    .spacer{ flex:1 }
+    .iconbtn{ border:1px solid var(--ring); background:var(--card); color:var(--fg);
+      border-radius:999px; padding:8px 12px; cursor:pointer; }
+    main{ padding:22px 20px 60px }
+    .grid{ max-width:1400px; margin:0 auto; display:grid; gap:14px;
+      grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); }
+    figure{ margin:0; border-radius:14px; overflow:hidden; background:var(--card); border:1px solid var(--ring); position:relative; }
+    figure img{ width:100%; height:100%; display:block; object-fit:cover; aspect-ratio:4/3; }
+    figure figcaption{ position:absolute; left:8px; bottom:8px; right:8px; color:#f2f2f2;
+      text-shadow:0 2px 12px rgba(0,0,0,.6); font-size:12px; letter-spacing:.2px; opacity:0; transition:.2s ease; }
+    figure:hover figcaption{ opacity:1 }
+    figure:hover img{ transform:scale(1.02); transition:transform .25s ease }
+    .lightbox{ position:fixed; inset:0; display:none; place-items:center; z-index:50; background:rgba(0,0,0,.75); }
+    .lightbox.open{ display:grid }
+    .lightbox img{ max-width:92vw; max-height:86vh; border-radius:16px; box-shadow:0 20px 70px rgba(0,0,0,.55); }
+    .lb-ui{ position:fixed; inset:0; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+    .lb-btn{ color:white; font-size:30px; padding:12px 16px; cursor:pointer; opacity:.9 }
+    .lb-btn:hover{ opacity:1 }
+    .lb-close{ position:absolute; top:14px; right:14px }
+    footer{ color:var(--muted); text-align:center; padding:50px 16px }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>My Photos</h1>
+      <div class="spacer"></div>
+      <button id="themeBtn" class="iconbtn" title="Toggle theme (D)">🌓</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="gallery" class="grid" aria-live="polite"></div>
+  </main>
+
+  <div id="lightbox" class="lightbox" aria-modal="true" role="dialog">
+    <div class="lb-ui">
+      <div id="prev" class="lb-btn" aria-label="Previous">◀</div>
+      <div id="next" class="lb-btn" aria-label="Next">▶</div>
+      <div id="close" class="lb-btn lb-close" aria-label="Close">✕</div>
+    </div>
+    <img id="lbImg" alt="Full size" />
+  </div>
+
+  <footer>
+    © <span id="year"></span> Me • Built on GitHub Pages
+  </footer>
+
+  <script>
+    // 1) Put your image files into /photos and list them here.
+    const PHOTOS = [
+      // Example entries — delete and add yours:
+      // { src: 'photos/lisbon-01.jpg', alt: 'Lisbon street at sunset' },
+      // { src: 'photos/seattle-01.jpg', alt: 'Seattle skyline' },
+    ];
+
+    // 2) Render
+    const $g = document.getElementById('gallery');
+    PHOTOS.forEach((p, i) => {
+      const fig = document.createElement('figure');
+      const img = document.createElement('img');
+      img.loading = 'lazy'; img.decoding = 'async';
+      img.src = p.src; img.alt = p.alt || `Photo ${i+1}`;
+      img.addEventListener('click', () => openLightbox(i));
+      const cap = document.createElement('figcaption');
+      cap.textContent = p.alt || '';
+      fig.appendChild(img); fig.appendChild(cap); $g.appendChild(fig);
+    });
+
+    // 3) Lightbox
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    let idx = 0;
+    function openLightbox(i){ idx = i; lb.classList.add('open'); setImg(); }
+    function setImg(){ lbImg.src = PHOTOS[idx].src; lbImg.alt = PHOTOS[idx].alt || ''; }
+    function closeLightbox(){ lb.classList.remove('open'); }
+    function next(){ idx = (idx + 1) % PHOTOS.length; setImg(); }
+    function prev(){ idx = (idx - 1 + PHOTOS.length) % PHOTOS.length; setImg(); }
+    document.getElementById('next').onclick = next;
+    document.getElementById('prev').onclick = prev;
+    document.getElementById('close').onclick = closeLightbox;
+    lb.addEventListener('click', (e) => { if(e.target === lb) closeLightbox(); });
+    document.addEventListener('keydown', (e) => {
+      if(!lb.classList.contains('open')){ if(e.key.toLowerCase() === 'd') toggleTheme(); return; }
+      if(e.key === 'Escape') closeLightbox();
+      if(e.key === 'ArrowRight') next();
+      if(e.key === 'ArrowLeft') prev();
+    });
+
+    // 4) Theme
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('themeBtn');
+    const saved = localStorage.getItem('theme');
+    if(saved === 'light') root.classList.add('light');
+    function toggleTheme(){
+      root.classList.toggle('light');
+      localStorage.setItem('theme', root.classList.contains('light') ? 'light' : 'dark');
+    }
+    themeBtn.addEventListener('click', toggleTheme);
+
+    // footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
 </html>
